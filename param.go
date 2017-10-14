@@ -162,6 +162,14 @@ type paramSingle struct {
 
 func (ps paramSingle) Build(c *Container) (reflect.Value, error) {
 	k := key{name: ps.Name, t: ps.Type}
+
+	// Check the parent cache first, else check local cache
+	for _, pc := range c.parents {
+		if v, err := ps.Build(pc); err == nil {
+			return v, nil
+		}
+	}
+
 	if v, ok := c.cache[k]; ok {
 		return v, nil
 	}

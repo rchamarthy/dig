@@ -1,4 +1,4 @@
-package: go.uber.org/dig
+package: golang.cisco.com/atom/dig
 license: MIT
 testImport:
 - package: github.com/stretchr/testify

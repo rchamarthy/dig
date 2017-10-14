@@ -59,8 +59,9 @@ type InvokeOption interface {
 
 // Container is a directed acyclic graph of types and their dependencies.
 type Container struct {
-	nodes map[key]*node
-	cache map[key]reflect.Value
+	nodes   map[key]*node
+	cache   map[key]reflect.Value
+	parents []*Container
 
 	// TODO: for advanced use-case, add an index
 	// This will allow retrieval of a single type, without specifying the exact
@@ -75,9 +76,39 @@ type Container struct {
 // New constructs a Container.
 func New(opts ...Option) *Container {
 	return &Container{
-		nodes: make(map[key]*node),
-		cache: make(map[key]reflect.Value),
+		nodes:   make(map[key]*node),
+		cache:   make(map[key]reflect.Value),
+		parents: []*Container{},
 	}
+}
+
+// NewWithParent creates a Container with a single parent dependency
+func NewWithParent(p *Container, opts ...Option) *Container {
+	c := New(opts...)
+	if p != nil {
+		c.parents = []*Container{p}
+	}
+	return c
+}
+
+// NewWithParents creates a container with multiple parent dependency
+func NewWithParents(p []*Container, opts ...Option) *Container {
+	c := New(opts...)
+	pcSet := map[*Container]struct{}{}
+	hasPC := func(parent *Container) bool {
+		_, ok := pcSet[parent]
+		if !ok {
+			pcSet[parent] = struct{}{}
+		}
+		return ok
+	}
+
+	for _, pc := range p {
+		if pc != nil && !hasPC(pc) {
+			c.parents = append(c.parents, pc)
+		}
+	}
+	return c
 }
 
 // Provide teaches the container how to build values of one or more types and
@@ -156,7 +187,8 @@ func (c *Container) provide(ctor interface{}, ctype reflect.Type) error {
 	}
 
 	for k := range n.Results.Produces() {
-		if _, ok := c.nodes[k]; ok {
+		found := c.checkParentProvides(k)
+		if _, ok := c.nodes[k]; ok || found {
 			return fmt.Errorf("%v (%v) provides %v, which is already in the container", ctor, ctype, k)
 		}
 		c.nodes[k] = n
@@ -168,6 +200,15 @@ func (c *Container) provide(ctor interface{}, ctype reflect.Type) error {
 	}
 
 	return nil
+}
+
+func (c *Container) checkParentProvides(k key) bool {
+	for _, pc := range c.parents {
+		if _, ok := pc.nodes[k]; ok {
+			return true
+		}
+	}
+	return false
 }
 
 func (c *Container) isAcyclic(p param, k key) error {
@@ -294,6 +335,12 @@ func shallowCheckDependencies(c *Container, p param) error {
 	var missing []key
 	forEachParamSingle(p, func(p paramSingle) {
 		k := key{name: p.Name, t: p.Type}
+		for _, pc := range c.parents {
+			if err := shallowCheckDependencies(pc, p); err == nil {
+				// Parent satisfies the dependencies, so we dont have to
+				return
+			}
+		}
 		if _, ok := c.nodes[k]; !ok && !p.Optional {
 			missing = append(missing, k)
 		}
