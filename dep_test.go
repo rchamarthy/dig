@@ -22,7 +22,7 @@ func NewLogger(cfg *Config) *log.Logger {
 }
 
 func NewConfig() *Config {
-	return &Config{"[foo]", 80}
+	return &Config{"[test]", 80}
 }
 
 func TestDepContainer(t *testing.T) {

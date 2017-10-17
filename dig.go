@@ -42,7 +42,8 @@ type key struct {
 // Option configures a Container. It's included for future functionality;
 // currently, there are no concrete implementations.
 type Option interface {
-	unimplemented()
+	// Process results after construction
+	ProcessResults(results []reflect.Value) error
 }
 
 // A ProvideOption modifies the default behavior of Provide. It's included for
@@ -62,6 +63,7 @@ type Container struct {
 	nodes   map[key]*node
 	cache   map[key]reflect.Value
 	parents []*Container
+	opts    []Option
 
 	// TODO: for advanced use-case, add an index
 	// This will allow retrieval of a single type, without specifying the exact
@@ -79,6 +81,7 @@ func New(opts ...Option) *Container {
 		nodes:   make(map[key]*node),
 		cache:   make(map[key]reflect.Value),
 		parents: []*Container{},
+		opts:    opts,
 	}
 }
 
@@ -250,13 +253,11 @@ func (n *node) Call(c *Container) error {
 	if err != nil {
 		return errWrapf(err, "couldn't get arguments for constructor %v", n.ctype)
 	}
-
 	results := reflect.ValueOf(n.ctor).Call(args)
 	if err := n.Results.ExtractList(c, results); err != nil {
 		return errWrapf(err, "constructor %v failed", n.ctype)
 	}
-
-	return nil
+	return processResults(c.opts, results)
 }
 
 type errCycleDetected struct {
@@ -347,6 +348,15 @@ func shallowCheckDependencies(c *Container, p param) error {
 	})
 	if len(missing) > 0 {
 		return fmt.Errorf("container is missing: %v", missing)
+	}
+	return nil
+}
+
+func processResults(opts []Option, results []reflect.Value) error {
+	for _, opt := range opts {
+		if err := opt.ProcessResults(results); err != nil {
+			return err
+		}
 	}
 	return nil
 }
