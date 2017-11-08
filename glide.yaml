@@ -1,4 +1,4 @@
-package: golang.cisco.com/atom/dig
+package: github.com/anuvu/dig
 license: MIT
 testImport:
 - package: github.com/stretchr/testify

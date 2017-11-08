@@ -1,5 +1,5 @@
-hash: c1adb57d436185fb4ec7ba17e1c50ad35b413b50a808b9462e9ce215a070118a
-updated: 2017-10-13T18:35:04.232399419-07:00
+hash: 471fe749f64b81106c49f08afd129edb99cf6eef2a146f6c9766f9eef2383a9b
+updated: 2017-11-07T19:54:19.947341968-08:00
 imports: []
 testImports:
 - name: github.com/davecgh/go-spew
@@ -21,8 +21,6 @@ testImports:
   subpackages:
   - assert
   - require
-- name: go.uber.org/dig
-  version: f74ade43b3dac3f7de204d61a597184b018c514b
 - name: golang.org/x/tools
   version: 9bd2f442688b66c5289262d70f537c2ecf81d7de
   subpackages:
