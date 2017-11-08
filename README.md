@@ -2,6 +2,8 @@
 
 A reflection based dependency injection toolkit for Go.
 
+Making incompatible changes from the original code at https://github.com/uber-go/dig.
+
 ### Good for:
 
 * Powering an application framework, e.g. [Fx](https://github.com/uber-go/fx).
